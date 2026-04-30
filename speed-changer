@@ -1,0 +1,148 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+
+-- character handler
+local function getCharacter()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char, char:WaitForChild("Humanoid")
+end
+
+local character, humanoid = getCharacter()
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "SpeedUI"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- main frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 420, 0, 260)
+frame.Position = UDim2.new(0.5, -210, 0.5, -130)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 18)
+
+-- gradient
+local grad = Instance.new("UIGradient", frame)
+grad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,170,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(120,0,255))
+}
+
+-- stroke
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(255,255,255)
+stroke.Transparency = 0.4
+
+-- title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundTransparency = 1
+title.Text = "Speed Controller"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 22
+title.TextColor3 = Color3.new(1,1,1)
+title.Parent = frame
+
+-- slider bar background
+local bar = Instance.new("Frame")
+bar.Size = UDim2.new(0.8,0,0,10)
+bar.Position = UDim2.new(0.1,0,0.4,0)
+bar.BackgroundColor3 = Color3.fromRGB(40,40,50)
+bar.Parent = frame
+Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
+
+-- fill bar
+local fill = Instance.new("Frame")
+fill.Size = UDim2.new(0,0,1,0)
+fill.BackgroundColor3 = Color3.fromRGB(0,200,255)
+fill.Parent = bar
+Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
+
+-- knob
+local knob = Instance.new("Frame")
+knob.Size = UDim2.new(0,18,0,18)
+knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+knob.Position = UDim2.new(0,0,-0.4,0)
+knob.Parent = bar
+Instance.new("UICorner", knob).CornerRadius = UDim.new(1,0)
+
+-- speed label
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(1,0,0,30)
+label.Position = UDim2.new(0,0,0.55,0)
+label.BackgroundTransparency = 1
+label.Text = "Speed: 16"
+label.Font = Enum.Font.GothamBold
+label.TextSize = 18
+label.TextColor3 = Color3.new(1,1,1)
+label.Parent = frame
+
+-- destroy button
+local destroy = Instance.new("TextButton")
+destroy.Size = UDim2.new(0.6,0,0,30)
+destroy.Position = UDim2.new(0.2,0,0.8,0)
+destroy.Text = "Destroy UI"
+destroy.BackgroundColor3 = Color3.fromRGB(180,60,60)
+destroy.TextColor3 = Color3.new(1,1,1)
+destroy.Font = Enum.Font.GothamBold
+destroy.Parent = frame
+Instance.new("UICorner", destroy).CornerRadius = UDim.new(0,10)
+
+-- settings
+local minSpeed = 16
+local maxSpeed = 120
+local dragging = false
+
+local function setSpeed(alpha)
+    local speed = math.floor(minSpeed + (maxSpeed - minSpeed) * alpha)
+    label.Text = "Speed: " .. speed
+    if humanoid then
+        humanoid.WalkSpeed = speed
+    end
+end
+
+-- slider logic
+bar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not dragging then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+
+    local x = math.clamp(input.Position.X - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
+    local alpha = x / bar.AbsoluteSize.X
+
+    fill.Size = UDim2.new(alpha,0,1,0)
+    knob.Position = UDim2.new(alpha, -9, -0.4, 0)
+
+    setSpeed(alpha)
+end)
+
+-- destroy
+destroy.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    if humanoid then
+        humanoid.WalkSpeed = 16
+    end
+end)
+
+-- respawn fix
+player.CharacterAdded:Connect(function()
+    character, humanoid = getCharacter()
+end)
