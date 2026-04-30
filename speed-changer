@@ -4,7 +4,7 @@ local UIS = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 ------------------------------------------------
--- CHARACTER
+-- CHARACTER HANDLING
 ------------------------------------------------
 local function getHumanoid()
     local char = player.Character or player.CharacterAdded:Wait()
@@ -21,23 +21,22 @@ end)
 -- GUI
 ------------------------------------------------
 local gui = Instance.new("ScreenGui")
-gui.Name = "SpeedSliderFixed"
+gui.Name = "SpeedUI_Pro"
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 400, 0, 180)
-frame.Position = UDim2.new(0.5, -200, 0.5, -90)
-frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+frame.Size = UDim2.new(0, 420, 0, 220)
+frame.Position = UDim2.new(0.5, -210, 0.5, -110)
+frame.BackgroundColor3 = Color3.fromRGB(18,18,22)
 frame.Active = true
 frame.Parent = gui
 Instance.new("UICorner", frame)
 
 ------------------------------------------------
--- SAFE DRAG SYSTEM (FIXED)
+-- SAFE DRAG (NO CONFLICT)
 ------------------------------------------------
 local draggingGui = false
-local dragStart
-local startPos
+local dragStart, startPos
 
 frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -70,9 +69,9 @@ end)
 -- TITLE
 ------------------------------------------------
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,0,0,30)
+title.Size = UDim2.new(1,0,0,35)
 title.BackgroundTransparency = 1
-title.Text = "Speed Slider (Fixed)"
+title.Text = "Speed Controller PRO"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
@@ -82,9 +81,9 @@ title.Parent = frame
 -- SLIDER UI
 ------------------------------------------------
 local bar = Instance.new("Frame")
-bar.Size = UDim2.new(0.8,0,0,10)
-bar.Position = UDim2.new(0.1,0,0.5,0)
-bar.BackgroundColor3 = Color3.fromRGB(50,50,60)
+bar.Size = UDim2.new(0.85,0,0,12)
+bar.Position = UDim2.new(0.075,0,0.35,0)
+bar.BackgroundColor3 = Color3.fromRGB(40,40,50)
 bar.Parent = frame
 Instance.new("UICorner", bar)
 
@@ -95,20 +94,20 @@ fill.Parent = bar
 Instance.new("UICorner", fill)
 
 local knob = Instance.new("Frame")
-knob.Size = UDim2.new(0,16,0,16)
+knob.Size = UDim2.new(0,18,0,18)
 knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
 knob.Position = UDim2.new(0,0,-0.3,0)
 knob.Parent = bar
 Instance.new("UICorner", knob)
 
 ------------------------------------------------
--- SETTINGS
+-- SPEED SETTINGS
 ------------------------------------------------
 local minSpeed = 16
 local maxSpeed = 120
 local draggingSlider = false
 
-local function setSpeed(alpha)
+local function applySpeed(alpha)
     local speed = math.floor(minSpeed + (maxSpeed - minSpeed) * alpha)
     if humanoid then
         humanoid.WalkSpeed = speed
@@ -116,7 +115,7 @@ local function setSpeed(alpha)
 end
 
 ------------------------------------------------
--- SLIDER FIXED INPUT (IMPORTANT PART)
+-- SLIDER FIX (NO GUI CONFLICT)
 ------------------------------------------------
 bar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -138,7 +137,49 @@ UIS.InputChanged:Connect(function(input)
     local alpha = x / bar.AbsoluteSize.X
 
     fill.Size = UDim2.new(alpha,0,1,0)
-    knob.Position = UDim2.new(alpha, -8, -0.3, 0)
+    knob.Position = UDim2.new(alpha, -9, -0.3, 0)
 
-    setSpeed(alpha)
+    applySpeed(alpha)
+end)
+
+------------------------------------------------
+-- BUTTONS
+------------------------------------------------
+
+-- DEFAULT BUTTON
+local defaultBtn = Instance.new("TextButton")
+defaultBtn.Size = UDim2.new(0.4,0,0,35)
+defaultBtn.Position = UDim2.new(0.075,0,0.65,0)
+defaultBtn.Text = "Default Speed"
+defaultBtn.BackgroundColor3 = Color3.fromRGB(70,70,80)
+defaultBtn.TextColor3 = Color3.new(1,1,1)
+defaultBtn.Font = Enum.Font.GothamBold
+defaultBtn.Parent = frame
+Instance.new("UICorner", defaultBtn)
+
+defaultBtn.MouseButton1Click:Connect(function()
+    if humanoid then
+        humanoid.WalkSpeed = 16
+    end
+
+    fill.Size = UDim2.new(0,0,1,0)
+    knob.Position = UDim2.new(0,0,-0.3,0)
+end)
+
+-- DESTROY BUTTON
+local destroyBtn = Instance.new("TextButton")
+destroyBtn.Size = UDim2.new(0.4,0,0,35)
+destroyBtn.Position = UDim2.new(0.525,0,0.65,0)
+destroyBtn.Text = "Destroy UI"
+destroyBtn.BackgroundColor3 = Color3.fromRGB(180,60,60)
+destroyBtn.TextColor3 = Color3.new(1,1,1)
+destroyBtn.Font = Enum.Font.GothamBold
+destroyBtn.Parent = frame
+Instance.new("UICorner", destroyBtn)
+
+destroyBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    if humanoid then
+        humanoid.WalkSpeed = 16
+    end
 end)
