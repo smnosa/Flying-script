@@ -1,148 +1,144 @@
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 
--- character handler
-local function getCharacter()
+------------------------------------------------
+-- CHARACTER
+------------------------------------------------
+local function getHumanoid()
     local char = player.Character or player.CharacterAdded:Wait()
-    return char, char:WaitForChild("Humanoid")
+    return char:WaitForChild("Humanoid")
 end
 
-local character, humanoid = getCharacter()
+local humanoid = getHumanoid()
 
+player.CharacterAdded:Connect(function()
+    humanoid = getHumanoid()
+end)
+
+------------------------------------------------
 -- GUI
+------------------------------------------------
 local gui = Instance.new("ScreenGui")
-gui.Name = "SpeedUI"
+gui.Name = "SpeedSliderFixed"
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- main frame
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 420, 0, 260)
-frame.Position = UDim2.new(0.5, -210, 0.5, -130)
+frame.Size = UDim2.new(0, 400, 0, 180)
+frame.Position = UDim2.new(0.5, -200, 0.5, -90)
 frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
 frame.Active = true
-frame.Draggable = true
 frame.Parent = gui
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 18)
+Instance.new("UICorner", frame)
 
--- gradient
-local grad = Instance.new("UIGradient", frame)
-grad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,170,255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(120,0,255))
-}
+------------------------------------------------
+-- SAFE DRAG SYSTEM (FIXED)
+------------------------------------------------
+local draggingGui = false
+local dragStart
+local startPos
 
--- stroke
-local stroke = Instance.new("UIStroke", frame)
-stroke.Thickness = 2
-stroke.Color = Color3.fromRGB(255,255,255)
-stroke.Transparency = 0.4
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingGui = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
 
--- title
+frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingGui = false
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if not draggingGui then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end)
+
+------------------------------------------------
+-- TITLE
+------------------------------------------------
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,0,0,40)
+title.Size = UDim2.new(1,0,0,30)
 title.BackgroundTransparency = 1
-title.Text = "Speed Controller"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 22
+title.Text = "Speed Slider (Fixed)"
 title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
 title.Parent = frame
 
--- slider bar background
+------------------------------------------------
+-- SLIDER UI
+------------------------------------------------
 local bar = Instance.new("Frame")
 bar.Size = UDim2.new(0.8,0,0,10)
-bar.Position = UDim2.new(0.1,0,0.4,0)
-bar.BackgroundColor3 = Color3.fromRGB(40,40,50)
+bar.Position = UDim2.new(0.1,0,0.5,0)
+bar.BackgroundColor3 = Color3.fromRGB(50,50,60)
 bar.Parent = frame
-Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
+Instance.new("UICorner", bar)
 
--- fill bar
 local fill = Instance.new("Frame")
 fill.Size = UDim2.new(0,0,1,0)
-fill.BackgroundColor3 = Color3.fromRGB(0,200,255)
+fill.BackgroundColor3 = Color3.fromRGB(0,170,255)
 fill.Parent = bar
-Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
+Instance.new("UICorner", fill)
 
--- knob
 local knob = Instance.new("Frame")
-knob.Size = UDim2.new(0,18,0,18)
+knob.Size = UDim2.new(0,16,0,16)
 knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
-knob.Position = UDim2.new(0,0,-0.4,0)
+knob.Position = UDim2.new(0,0,-0.3,0)
 knob.Parent = bar
-Instance.new("UICorner", knob).CornerRadius = UDim.new(1,0)
+Instance.new("UICorner", knob)
 
--- speed label
-local label = Instance.new("TextLabel")
-label.Size = UDim2.new(1,0,0,30)
-label.Position = UDim2.new(0,0,0.55,0)
-label.BackgroundTransparency = 1
-label.Text = "Speed: 16"
-label.Font = Enum.Font.GothamBold
-label.TextSize = 18
-label.TextColor3 = Color3.new(1,1,1)
-label.Parent = frame
-
--- destroy button
-local destroy = Instance.new("TextButton")
-destroy.Size = UDim2.new(0.6,0,0,30)
-destroy.Position = UDim2.new(0.2,0,0.8,0)
-destroy.Text = "Destroy UI"
-destroy.BackgroundColor3 = Color3.fromRGB(180,60,60)
-destroy.TextColor3 = Color3.new(1,1,1)
-destroy.Font = Enum.Font.GothamBold
-destroy.Parent = frame
-Instance.new("UICorner", destroy).CornerRadius = UDim.new(0,10)
-
--- settings
+------------------------------------------------
+-- SETTINGS
+------------------------------------------------
 local minSpeed = 16
 local maxSpeed = 120
-local dragging = false
+local draggingSlider = false
 
 local function setSpeed(alpha)
     local speed = math.floor(minSpeed + (maxSpeed - minSpeed) * alpha)
-    label.Text = "Speed: " .. speed
     if humanoid then
         humanoid.WalkSpeed = speed
     end
 end
 
--- slider logic
+------------------------------------------------
+-- SLIDER FIXED INPUT (IMPORTANT PART)
+------------------------------------------------
 bar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
+        draggingSlider = true
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
+bar.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
+        draggingSlider = false
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if not dragging then return end
+UIS.InputChanged:Connect(function(input)
+    if not draggingSlider then return end
     if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
 
     local x = math.clamp(input.Position.X - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
     local alpha = x / bar.AbsoluteSize.X
 
     fill.Size = UDim2.new(alpha,0,1,0)
-    knob.Position = UDim2.new(alpha, -9, -0.4, 0)
+    knob.Position = UDim2.new(alpha, -8, -0.3, 0)
 
     setSpeed(alpha)
-end)
-
--- destroy
-destroy.MouseButton1Click:Connect(function()
-    gui:Destroy()
-    if humanoid then
-        humanoid.WalkSpeed = 16
-    end
-end)
-
--- respawn fix
-player.CharacterAdded:Connect(function()
-    character, humanoid = getCharacter()
 end)
