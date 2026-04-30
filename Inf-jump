@@ -1,0 +1,182 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+
+-- character loader
+local function getChar()
+    local c = player.Character or player.CharacterAdded:Wait()
+    return c, c:WaitForChild("Humanoid")
+end
+
+local character, humanoid = getChar()
+
+-- GUI ROOT
+local gui = Instance.new("ScreenGui")
+gui.Name = "ProJumpUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- MAIN FRAME
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 420, 0, 260)
+frame.Position = UDim2.new(0.5, -210, 0.5, -130)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,35)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 18)
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 2
+
+-- TITLE
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,30)
+title.BackgroundTransparency = 1
+title.Text = "Infinite Jump Hub"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.new(1,1,1)
+title.Parent = frame
+
+-- TAB BUTTONS
+local tabs = {}
+local tabNames = {"Main","Themes","Credits"}
+for i,name in ipairs(tabNames) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0,120,0,30)
+    btn.Position = UDim2.new(0,(i-1)*130,0,30)
+    btn.Text = name
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    btn.BackgroundColor3 = Color3.fromRGB(45,45,55)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Parent = frame
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+    tabs[name] = btn
+end
+
+-- PAGES
+local pages = {}
+for _,name in ipairs(tabNames) do
+    local page = Instance.new("Frame")
+    page.Size = UDim2.new(1,0,1,-70)
+    page.Position = UDim2.new(0,0,0,70)
+    page.BackgroundTransparency = 1
+    page.Visible = false
+    page.Parent = frame
+    pages[name] = page
+end
+
+pages["Main"].Visible = true
+
+-- TAB SWITCHING
+for name,btn in pairs(tabs) do
+    btn.MouseButton1Click:Connect(function()
+        for n,p in pairs(pages) do
+            p.Visible = (n == name)
+        end
+    end)
+end
+
+-- MAIN TAB CONTENT
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(0.5,0,0,50)
+toggle.Position = UDim2.new(0.25,0,0.2,0)
+toggle.Text = "OFF"
+toggle.Font = Enum.Font.GothamBold
+toggle.TextSize = 18
+toggle.BackgroundColor3 = Color3.fromRGB(60,60,70)
+toggle.TextColor3 = Color3.new(1,1,1)
+toggle.Parent = pages["Main"]
+Instance.new("UICorner", toggle)
+
+local destroy = Instance.new("TextButton")
+destroy.Size = UDim2.new(0.5,0,0,40)
+destroy.Position = UDim2.new(0.25,0,0.6,0)
+destroy.Text = "Destroy UI"
+destroy.Font = Enum.Font.Gotham
+destroy.TextSize = 14
+destroy.BackgroundColor3 = Color3.fromRGB(170,60,60)
+destroy.TextColor3 = Color3.new(1,1,1)
+destroy.Parent = pages["Main"]
+Instance.new("UICorner", destroy)
+
+-- THEMES
+local themeList = {
+    Color3.fromRGB(0,170,255), Color3.fromRGB(255,85,0),
+    Color3.fromRGB(0,255,127), Color3.fromRGB(255,0,127),
+    Color3.fromRGB(255,255,0), Color3.fromRGB(170,0,255),
+    Color3.fromRGB(0,255,255), Color3.fromRGB(255,0,0),
+    Color3.fromRGB(0,200,100), Color3.fromRGB(200,200,200),
+    Color3.fromRGB(100,100,255), Color3.fromRGB(255,100,100),
+    Color3.fromRGB(100,255,100), Color3.fromRGB(255,200,0),
+    Color3.fromRGB(150,0,200), Color3.fromRGB(0,150,200),
+    Color3.fromRGB(255,50,150), Color3.fromRGB(50,255,200),
+    Color3.fromRGB(200,50,50), Color3.fromRGB(50,50,50)
+}
+
+for i,color in ipairs(themeList) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0,60,0,40)
+    btn.Position = UDim2.new(0,(i-1)%6*65,0,math.floor((i-1)/6)*45)
+    btn.BackgroundColor3 = color
+    btn.Text = ""
+    btn.Parent = pages["Themes"]
+    Instance.new("UICorner", btn)
+
+    btn.MouseButton1Click:Connect(function()
+        TweenService:Create(stroke, TweenInfo.new(0.3), {
+            Color = color
+        }):Play()
+    end)
+end
+
+-- CREDITS
+local credits = Instance.new("TextLabel")
+credits.Size = UDim2.new(1,0,1,0)
+credits.BackgroundTransparency = 1
+credits.Text = "UI + Script by You & ChatGPT\nLuau Power ⚡"
+credits.Font = Enum.Font.Gotham
+credits.TextSize = 16
+credits.TextColor3 = Color3.new(1,1,1)
+credits.Parent = pages["Credits"]
+
+-- TOGGLE LOGIC
+local enabled = false
+
+toggle.MouseButton1Click:Connect(function()
+    enabled = not enabled
+    toggle.Text = enabled and "ON" or "OFF"
+
+    TweenService:Create(toggle, TweenInfo.new(0.25), {
+        BackgroundColor3 = enabled and Color3.fromRGB(0,170,255) or Color3.fromRGB(60,60,70)
+    }):Play()
+end)
+
+destroy.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+-- INFINITE JUMP (NORMAL FEEL)
+local lastJump = 0
+local cooldown = 0.1
+
+UserInputService.JumpRequest:Connect(function()
+    if not enabled then return end
+    if not humanoid then return end
+
+    local t = tick()
+    if t - lastJump < cooldown then return end
+    lastJump = t
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+end)
+
+-- RESPAWN FIX
+player.CharacterAdded:Connect(function()
+    character, humanoid = getChar()
+end)
