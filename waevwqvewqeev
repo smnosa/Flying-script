@@ -1,0 +1,186 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+------------------------------------------------
+-- CHARACTER
+------------------------------------------------
+local function getHumanoid()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:WaitForChild("Humanoid")
+end
+
+local humanoid = getHumanoid()
+
+player.CharacterAdded:Connect(function()
+    humanoid = getHumanoid()
+end)
+
+------------------------------------------------
+-- GUI
+------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "SpeedUI_Fixed"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 420, 0, 220)
+frame.Position = UDim2.new(0.5, -210, 0.5, -110)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+frame.Parent = gui
+Instance.new("UICorner", frame)
+
+------------------------------------------------
+-- TOP BAR (ONLY DRAGGABLE PART)
+------------------------------------------------
+local topBar = Instance.new("Frame")
+topBar.Size = UDim2.new(1,0,0,35)
+topBar.BackgroundColor3 = Color3.fromRGB(30,30,35)
+topBar.Parent = frame
+Instance.new("UICorner", topBar)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,1,0)
+title.BackgroundTransparency = 1
+title.Text = "Speed Controller"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = topBar
+
+------------------------------------------------
+-- DRAG SYSTEM (ONLY TOP BAR)
+------------------------------------------------
+local dragging = false
+local dragStart, startPos
+
+topBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+topBar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if not dragging then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end)
+
+------------------------------------------------
+-- SLIDER
+------------------------------------------------
+local bar = Instance.new("Frame")
+bar.Size = UDim2.new(0.85,0,0,10)
+bar.Position = UDim2.new(0.075,0,0.45,0)
+bar.BackgroundColor3 = Color3.fromRGB(50,50,60)
+bar.Parent = frame
+Instance.new("UICorner", bar)
+
+local fill = Instance.new("Frame")
+fill.Size = UDim2.new(0,0,1,0)
+fill.BackgroundColor3 = Color3.fromRGB(0,170,255)
+fill.Parent = bar
+Instance.new("UICorner", fill)
+
+local knob = Instance.new("Frame")
+knob.Size = UDim2.new(0,16,0,16)
+knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+knob.Position = UDim2.new(0,0,-0.3,0)
+knob.Parent = bar
+Instance.new("UICorner", knob)
+
+------------------------------------------------
+-- SPEED
+------------------------------------------------
+local minSpeed = 16
+local maxSpeed = 120
+local draggingSlider = false
+
+local function setSpeed(alpha)
+    local speed = math.floor(minSpeed + (maxSpeed - minSpeed) * alpha)
+    if humanoid then
+        humanoid.WalkSpeed = speed
+    end
+end
+
+bar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingSlider = true
+    end
+end)
+
+bar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingSlider = false
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if not draggingSlider then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+
+    local x = math.clamp(input.Position.X - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
+    local alpha = x / bar.AbsoluteSize.X
+
+    fill.Size = UDim2.new(alpha,0,1,0)
+    knob.Position = UDim2.new(alpha, -8, -0.3, 0)
+
+    setSpeed(alpha)
+end)
+
+------------------------------------------------
+-- DEFAULT BUTTON
+------------------------------------------------
+local defaultBtn = Instance.new("TextButton")
+defaultBtn.Size = UDim2.new(0.4,0,0,35)
+defaultBtn.Position = UDim2.new(0.075,0,0.7,0)
+defaultBtn.Text = "Default"
+defaultBtn.BackgroundColor3 = Color3.fromRGB(70,70,80)
+defaultBtn.TextColor3 = Color3.new(1,1,1)
+defaultBtn.Font = Enum.Font.GothamBold
+defaultBtn.Parent = frame
+Instance.new("UICorner", defaultBtn)
+
+defaultBtn.MouseButton1Click:Connect(function()
+    if humanoid then
+        humanoid.WalkSpeed = 16
+    end
+    fill.Size = UDim2.new(0,0,1,0)
+    knob.Position = UDim2.new(0,0,-0.3,0)
+end)
+
+------------------------------------------------
+-- DESTROY BUTTON
+------------------------------------------------
+local destroyBtn = Instance.new("TextButton")
+destroyBtn.Size = UDim2.new(0.4,0,0,35)
+destroyBtn.Position = UDim2.new(0.525,0,0.7,0)
+destroyBtn.Text = "Destroy"
+destroyBtn.BackgroundColor3 = Color3.fromRGB(180,60,60)
+destroyBtn.TextColor3 = Color3.new(1,1,1)
+destroyBtn.Font = Enum.Font.GothamBold
+destroyBtn.Parent = frame
+Instance.new("UICorner", destroyBtn)
+
+destroyBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    if humanoid then
+        humanoid.WalkSpeed = 16
+    end
+end)
