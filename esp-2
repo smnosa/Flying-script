@@ -1,0 +1,158 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local enabled = false
+
+------------------------------------------------
+-- GUI
+------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "AdvancedESP"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 420, 0, 260)
+frame.Position = UDim2.new(0.1, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(18,18,20)
+frame.Parent = gui
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame)
+
+-- top bar
+local top = Instance.new("Frame")
+top.Size = UDim2.new(1,0,0,35)
+top.BackgroundColor3 = Color3.fromRGB(28,28,32)
+top.Parent = frame
+Instance.new("UICorner", top)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,1,0)
+title.BackgroundTransparency = 1
+title.Text = "ADVANCED ESP PANEL"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.Parent = top
+
+------------------------------------------------
+-- buttons
+------------------------------------------------
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(0,120,0,40)
+toggle.Position = UDim2.new(0,20,0,60)
+toggle.Text = "OFF"
+toggle.Font = Enum.Font.GothamBold
+toggle.TextSize = 14
+toggle.BackgroundColor3 = Color3.fromRGB(60,60,70)
+toggle.TextColor3 = Color3.new(1,1,1)
+toggle.Parent = frame
+Instance.new("UICorner", toggle)
+
+local destroy = Instance.new("TextButton")
+destroy.Size = UDim2.new(0,120,0,40)
+destroy.Position = UDim2.new(0,160,0,60)
+destroy.Text = "DESTROY"
+destroy.Font = Enum.Font.GothamBold
+destroy.TextSize = 14
+destroy.BackgroundColor3 = Color3.fromRGB(180,50,50)
+destroy.TextColor3 = Color3.new(1,1,1)
+destroy.Parent = frame
+Instance.new("UICorner", destroy)
+
+------------------------------------------------
+-- ESP STORAGE
+------------------------------------------------
+local espObjects = {}
+
+local function getTeamColor(plr)
+    if plr.Team then
+        return plr.TeamColor.Color
+    end
+    return Color3.fromRGB(255,255,255)
+end
+
+------------------------------------------------
+-- create 3D corner ESP (BETTER VISUAL STYLE)
+------------------------------------------------
+local function createESP(plr)
+    if plr == player then return end
+    if not plr.Character then return end
+
+    local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    -- remove old
+    if espObjects[plr] then
+        espObjects[plr]:Destroy()
+    end
+
+    if not enabled then return end
+
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = "ESP"
+    box.Adornee = hrp
+    box.Size = Vector3.new(4,6,4)
+    box.Color3 = getTeamColor(plr)
+    box.Transparency = 0.7
+    box.AlwaysOnTop = true
+    box.ZIndex = 5
+    box.Parent = hrp
+
+    espObjects[plr] = box
+end
+
+------------------------------------------------
+-- refresh logic (EVENT DRIVEN, NOT LOOP)
+------------------------------------------------
+local function hookPlayer(plr)
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.2)
+        createESP(plr)
+    end)
+
+    plr:GetPropertyChangedSignal("Team"):Connect(function()
+        createESP(plr)
+    end)
+end
+
+for _,plr in ipairs(Players:GetPlayers()) do
+    hookPlayer(plr)
+end
+
+Players.PlayerAdded:Connect(hookPlayer)
+
+------------------------------------------------
+-- TOGGLE
+------------------------------------------------
+toggle.MouseButton1Click:Connect(function()
+    enabled = not enabled
+
+    toggle.Text = enabled and "ON" or "OFF"
+    toggle.BackgroundColor3 = enabled and Color3.fromRGB(0,170,255) or Color3.fromRGB(60,60,70)
+
+    if enabled then
+        for _,plr in ipairs(Players:GetPlayers()) do
+            createESP(plr)
+        end
+    else
+        for _,v in pairs(espObjects) do
+            if v then v:Destroy() end
+        end
+        espObjects = {}
+    end
+end)
+
+------------------------------------------------
+-- DESTROY
+------------------------------------------------
+destroy.MouseButton1Click:Connect(function()
+    enabled = false
+
+    for _,v in pairs(espObjects) do
+        if v then v:Destroy() end
+    end
+
+    gui:Destroy()
+end)
