@@ -1,0 +1,108 @@
+local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local espEnabled = false
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "ESP_UI"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 120)
+frame.Position = UDim2.new(0.1, 0, 0.5, -60)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+Instance.new("UICorner", frame)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,30)
+title.BackgroundTransparency = 1
+title.Text = "ESP System"
+title.TextColor3 = Color3.new(1,1,1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = frame
+
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(0.8,0,0,40)
+toggle.Position = UDim2.new(0.1,0,0.4,0)
+toggle.Text = "OFF"
+toggle.BackgroundColor3 = Color3.fromRGB(60,60,70)
+toggle.TextColor3 = Color3.new(1,1,1)
+toggle.Font = Enum.Font.GothamBold
+toggle.Parent = frame
+Instance.new("UICorner", toggle)
+
+local function createESP(plr)
+    if plr == player then return end
+
+    local function attach(character)
+        local head = character:FindFirstChild("Head")
+        if not head then return end
+
+        local old = head:FindFirstChild("ESP")
+        if old then old:Destroy() end
+
+        if not espEnabled then return end
+
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ESP"
+        billboard.Size = UDim2.new(0, 120, 0, 40)
+        billboard.StudsOffset = Vector3.new(0, 2, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = head
+
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1,0,1,0)
+        label.BackgroundTransparency = 1
+        label.Text = plr.Name
+        label.TextColor3 = Color3.fromRGB(0,255,255)
+        label.Font = Enum.Font.GothamBold
+        label.TextScaled = true
+        label.Parent = billboard
+    end
+
+    if plr.Character then
+        attach(plr.Character)
+    end
+
+    plr.CharacterAdded:Connect(attach)
+end
+
+-- apply to all players
+local function applyESP()
+    for _,plr in ipairs(Players:GetPlayers()) do
+        createESP(plr)
+    end
+end
+
+local function clearESP()
+    for _,plr in ipairs(Players:GetPlayers()) do
+        if plr.Character and plr.Character:FindFirstChild("Head") then
+            local esp = plr.Character.Head:FindFirstChild("ESP")
+            if esp then esp:Destroy() end
+        end
+    end
+end
+
+toggle.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+
+    toggle.Text = espEnabled and "ON" or "OFF"
+    toggle.BackgroundColor3 = espEnabled and Color3.fromRGB(0,170,255) or Color3.fromRGB(60,60,70)
+
+    if espEnabled then
+        applyESP()
+    else
+        clearESP()
+    end
+end)
+
+Players.PlayerAdded:Connect(function(plr)
+    if espEnabled then
+        createESP(plr)
+    end
+end)
